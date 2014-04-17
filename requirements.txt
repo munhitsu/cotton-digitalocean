@@ -1,0 +1,5 @@
+fabric
+ipython
+git+https://github.com/ministryofjustice/cotton.git
+git+https://github.com/munhitsu/python-digitalocean.git
+git+https://github.com/munhitsu/cotton-digitalocean.git
