@@ -22,5 +22,5 @@ example cotton.yaml:
 
 TODO
 ====
-[] allow to use textual names instead of ids only
-[] ensure that PR https://github.com/koalalorenzo/python-digitalocean/pull/28 gets merged
+- allow to use textual names instead of ids only
+- ensure that PR https://github.com/koalalorenzo/python-digitalocean/pull/28 gets merged
