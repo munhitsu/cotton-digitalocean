@@ -3,7 +3,7 @@ cotton-digitalocean
 
 digitalocean provider for cotton
 
-example cotton.yaml:
+example cotton.yaml:: 
 
     provider_zones:
       digitalocean_dev:
