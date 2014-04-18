@@ -14,13 +14,21 @@ example cotton.yaml::
         image_id: 473123
         size_id: 66
         backup_active: False
-        ssh_key_ids: 107222
+        ssh_key_ids:
+         - your_ssh_key_id
         provisioning_ssh_key: ~/.ssh/id_rsa
         provisioning_user: root
         private_networking: False
 
 
-TODO
-====
-- allow to use textual names instead of ids only
-- ensure that PR https://github.com/koalalorenzo/python-digitalocean/pull/28 gets merged
+
+You can also use slug names instead of ids::
+
+        region_slug: ams1
+        image_slug: ubuntu-12-04-x64
+        size_slug: 512mb
+
+
+To list all options execute task `options`::
+
+    from cotton_digitalocean.tasks import options

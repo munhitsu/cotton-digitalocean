@@ -5,7 +5,8 @@ import datetime
 import dateutil.parser
 import copy
 import pprint
-import digitalocean
+from dop.client import Client, DOPException
+from dop.models import Droplet
 from fabric.api import abort, env, prompt
 from cotton.colors import *
 from cotton.provider.driver import Provider
@@ -20,12 +21,12 @@ class DigitalOceanProvider(Provider):
         """
         initializes connection object
         """
-        self.connection = digitalocean.Manager(client_id=client_id, api_key=api_key)
+        self.connection = Client(client_id, api_key)
         assert self.connection is not None
 
     def status(self):
         instances = []
-        droplets = self.connection.get_all_droplets()
+        droplets = self.connection.droplets()
         for droplet in droplets:
             instances.append(self.info(droplet))
         return instances
@@ -37,31 +38,51 @@ class DigitalOceanProvider(Provider):
         """
         zone_config = get_provider_zone_config()
 
-        droplet = digitalocean.Droplet(
-            client_id=self.connection.client_id,
-            api_key=self.connection.api_key,
+        result = self.filter(name=name)
+        if result:
+            abort(red("VM name already in use"))
+
+
+        size = {}
+        fields = ['size_id', 'size_slug']
+        for field in fields:
+            if field in zone_config:
+                size[field] = zone_config[field]
+
+        image = {}
+        fields = ['image_id', 'image_slug']
+        for field in fields:
+            if field in zone_config:
+                image[field] = zone_config[field]
+
+        region = {}
+        fields = ['region_id', 'region_slug']
+        for field in fields:
+            if field in zone_config:
+                region[field] = zone_config[field]
+
+        droplet = self.connection.create_droplet(
             name=name,
-            region_id=zone_config['region_id'],
-            image_id=zone_config['image_id'],
-            size_id=zone_config['size_id'],
-            backup_active=zone_config['backup_active'],
+            size=size,
+            image=image,
+            region=region,
+            backups_enabled=zone_config['backup_active'],
             private_networking=zone_config['private_networking'],
-            ssh_key_ids=zone_config['ssh_key_ids'])
-        droplet.create()
+            ssh_key_ids=map(lambda x: str(x), zone_config['ssh_key_ids'])
+        )
 
         print("Waiting for instance to run",)
         while droplet.ip_address is None or droplet.status != 'active':
-            droplet.load()
-            print(self.info(droplet))
             sys.stdout.write(".")
             sys.stdout.flush()
             time.sleep(1)
+            droplet = self.connection.show_droplet(droplet.droplet_id)
         print(" OK")
 
         return droplet
 
     def terminate(self, server):
-        assert isinstance(server, digitalocean.Droplet)
+        assert isinstance(server, Droplet)
         pprint.pprint(self.info(server))
 
         if env.force:
@@ -70,9 +91,17 @@ class DigitalOceanProvider(Provider):
             sure = prompt(red("Type 'T' to confirm termination"), default='N')
 
         if sure == 'T':
-            server.rename('{}-terminated'.format(server.name))
-            time.sleep(1) #TODO: wait for droplet to be available
-            server.destroy()
+            self.connection.rename_droplet(server.droplet_id, '{}-terminating'.format(server.name))
+#            time.sleep(1) #TODO: wait for droplet to be available
+            while True:
+                try:
+                    self.connection.destroy_droplet(server.droplet_id)
+                    break
+                except:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                    time.sleep(1)
+                    continue
             print("Terminated")
         else:
             print("Aborting termination")
@@ -86,10 +115,10 @@ class DigitalOceanProvider(Provider):
 
         if 'name' in kwargs:
             name = kwargs['name']
-            for droplet in self.connection.get_all_droplets():
+            for droplet in self.connection.droplets():
                 if droplet.name == name:
                     instances.append(droplet)
-                    print("selected digital ocean droplet: {}".format(droplet.id))
+                    print("selected digital ocean droplet: {}".format(droplet.droplet_id))
         else:
             raise NotImplementedError()
 
@@ -102,13 +131,7 @@ class DigitalOceanProvider(Provider):
         """
         returns dictionary with info about server
         """
-        info_dict = dict()
-        info_dict["name"] = server.name
-        info_dict["ip_address"] = server.ip_address
-        info_dict["private_ip_address"] = server.private_ip_address
-        info_dict["backup_active"] = server.backup_active
-        info_dict["status"] = server.status
-        return info_dict
+        return server.to_json()
 
     def host_string(self, server):
         #TODO: where to select user/provisioning mode
