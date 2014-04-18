@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cotton-digitalocean',
-    version='0.1.1',
+    version='0.2.0',
     url='http://github.com/munhitsu/cotton-digitalocean',
     license='MIT',
     author='Mateusz Lapsa-Malawski',

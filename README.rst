@@ -13,7 +13,7 @@ example cotton.yaml::
         region_id: 2
         image_id: 473123
         size_id: 66
-        backup_active: False
+        backups_enabled: False
         ssh_key_ids:
          - your_ssh_key_id
         provisioning_ssh_key: ~/.ssh/id_rsa

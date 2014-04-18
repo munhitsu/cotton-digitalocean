@@ -66,7 +66,7 @@ class DigitalOceanProvider(Provider):
             size=size,
             image=image,
             region=region,
-            backups_enabled=zone_config['backup_active'],
+            backups_enabled=zone_config['backups_enabled'],
             private_networking=zone_config['private_networking'],
             ssh_key_ids=map(lambda x: str(x), zone_config['ssh_key_ids'])
         )
